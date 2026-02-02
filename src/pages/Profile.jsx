@@ -19,26 +19,76 @@ const Profile = () => {
 
   useEffect(() => {
     const getProfile = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserData({
-          name: user.user_metadata?.full_name || 'User',
-          email: user.email || '',
-          phone: user.user_metadata?.phone || '',
-          createdAt: user.created_at ? new Date(user.created_at).toLocaleDateString() : ''
-        });
-        setEditedName(user.user_metadata?.full_name || 'User');
-        setEditedPhone(user.user_metadata?.phone || '');
-      } else {
+      // Check localStorage authentication first (your main login system)
+      const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+      const userSession = localStorage.getItem('userSession');
+      
+      if (isAuthenticated && userSession) {
+        try {
+          const user = JSON.parse(userSession);
+          setUserData({
+            name: user.name || 'User',
+            email: user.email || '',
+            phone: user.phone || '', // Adjust based on what you store in localStorage
+            createdAt: user.createdAt || new Date().toLocaleDateString() // Fallback date
+          });
+          setEditedName(user.name || 'User');
+          setEditedPhone(user.phone || '');
+          return;
+        } catch (err) {
+          console.error('Error parsing user session:', err);
+        }
+      }
+      
+      // Fallback: Check Supabase auth (for backward compatibility)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setUserData({
+            name: user.user_metadata?.full_name || 'User',
+            email: user.email || '',
+            phone: user.user_metadata?.phone || '',
+            createdAt: user.created_at ? new Date(user.created_at).toLocaleDateString() : new Date().toLocaleDateString()
+          });
+          setEditedName(user.user_metadata?.full_name || 'User');
+          setEditedPhone(user.user_metadata?.phone || '');
+        } else {
+          // No authentication found, redirect to login
+          navigate('/login');
+        }
+      } catch (err) {
+        console.error('Error fetching user from Supabase:', err);
         navigate('/login');
       }
     };
+    
     getProfile();
   }, [navigate]);
 
   const handleSave = async () => {
     setLoading(true);
     try {
+      // First check localStorage authentication
+      const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+      const userSession = localStorage.getItem('userSession');
+      
+      if (isAuthenticated && userSession) {
+        // Update localStorage user data
+        const user = JSON.parse(userSession);
+        const updatedUser = {
+          ...user,
+          name: editedName,
+          phone: editedPhone
+        };
+        localStorage.setItem('userSession', JSON.stringify(updatedUser));
+        
+        setUserData(prev => ({ ...prev, name: editedName, phone: editedPhone }));
+        setIsEditing(false);
+        showToast('Profile updated successfully!', 'success');
+        return;
+      }
+      
+      // Fallback: Update Supabase auth
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { error } = await supabase.auth.updateUser({
@@ -207,4 +257,3 @@ const Profile = () => {
 };
 
 export default Profile;
-

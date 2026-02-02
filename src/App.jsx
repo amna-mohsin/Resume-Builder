@@ -8,7 +8,6 @@ import GetStarted from './pages/GetStarted';
 import Dashboard from './pages/Dashboard'; 
 import ResumeEditor from './pages/ResumeEditor';
 import Profile from './pages/Profile';
-import Settings from './pages/Settings';
 import ATSChecker from './pages/ATSChecker';
 
 function App() {
@@ -28,7 +27,6 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/resume-builder" element={<ResumeEditor />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
         <Route path="/ats-checker" element={<ATSChecker />} />
 
         {/* Redirect empty path to get-started or dashboard */}
